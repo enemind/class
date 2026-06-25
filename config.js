@@ -5,7 +5,7 @@
 const CONFIG = {
   // Paste your Google Apps Script Web App URL here after deployment
   // See README.md for step-by-step instructions
-  SCRIPT_URL: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycby-oc-qKl1oigxV-IIEQCOl7amM0wxozVfc96-TJZHpfu9x3tSmOzCd0FNURNdyLuzk/exec",
 
   // Your institution / site name
   SITE_NAME: "EduTrack",
