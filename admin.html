@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — EduTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .admin-login { max-width: 420px; margin: 6rem auto; padding: 0 1.5rem; }
+    .announce-textarea { resize: vertical; min-height: 100px; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../index.html" class="nav-logo">Edu<span>Track</span></a>
+    <div class="nav-links">
+      <a href="schedule.html">Schedule</a>
+      <span style="color:var(--sage);font-weight:600;">Admin Panel</span>
+      <a href="#" onclick="adminLogout()" id="logoutLink" class="hidden">Sign Out</a>
+    </div>
+  </nav>
+
+  <!-- ADMIN LOGIN GATE -->
+  <div id="adminLoginPage">
+    <div class="admin-login">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:0.25rem;">Restricted</div>
+      <h1 style="margin-bottom:0.4rem;">Admin Access</h1>
+      <p class="text-slate" style="margin-bottom:2rem;font-size:0.95rem;">Enter the admin password to continue.</p>
+      <div class="form-card">
+        <div id="loginAlert" class="alert"></div>
+        <div class="form-group" id="fg-pw">
+          <label for="adminPw">Password</label>
+          <input type="password" id="adminPw" placeholder="••••••••"
+            onkeydown="if(event.key==='Enter') adminLogin()">
+        </div>
+        <button class="btn btn-primary w-full" id="adminLoginBtn" onclick="adminLogin()">Enter Admin Panel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL (shown after login) -->
+  <div id="adminPanel" class="hidden">
+    <div class="admin-layout">
+
+      <!-- Sidebar -->
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar-title">Admin Panel</div>
+        <button class="sidebar-link active" onclick="showSection('overview', this)">📊 Overview</button>
+        <button class="sidebar-link" onclick="showSection('classes', this)">📚 Classes</button>
+        <button class="sidebar-link" onclick="showSection('students', this)">👥 Students</button>
+        <button class="sidebar-link" onclick="showSection('attendance', this)">✅ Attendance</button>
+        <button class="sidebar-link" onclick="showSection('announce', this)">📢 Announcements</button>
+        <div style="margin-top:auto;padding-top:2rem;">
+          <button class="sidebar-link" onclick="adminLogout()" style="color:rgba(255,255,255,0.4);">↩ Sign Out</button>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="admin-main">
+
+        <!-- OVERVIEW -->
+        <div class="admin-section active" id="sec-overview">
+          <div class="admin-section-title">Overview</div>
+          <div class="admin-section-sub">Live stats from your Google Sheet.</div>
+          <div id="overviewAlert" class="alert mb-2"></div>
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card"><div class="admin-stat-val" id="ov-students">—</div><div class="admin-stat-label">Total Students</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-val" id="ov-classes">—</div><div class="admin-stat-label">Active Classes</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-val" id="ov-enrollments">—</div><div class="admin-stat-label">Total Enrollments</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-val" id="ov-waitlist">—</div><div class="admin-stat-label">On Waitlists</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-val" id="ov-sessions">—</div><div class="admin-stat-label">Sessions This Month</div></div>
+            <div class="admin-stat-card"><div class="admin-stat-val" id="ov-attendance">—</div><div class="admin-stat-label">Avg Attendance %</div></div>
+          </div>
+          <h3 style="margin:2rem 0 1rem;">Recent Registrations</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Email</th><th>Class</th><th>Registered</th><th>Status</th></tr></thead>
+              <tbody id="recentRegistrations"><tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--slate)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CLASSES -->
+        <div class="admin-section" id="sec-classes">
+          <div class="flex-between" style="margin-bottom:0.25rem;">
+            <div class="admin-section-title">Classes</div>
+            <button class="btn btn-primary btn-sm" onclick="openClassModal()">+ Add Class</button>
+          </div>
+          <div class="admin-section-sub">Manage all class sessions.</div>
+          <div id="classesAlert" class="alert mb-2"></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Title</th><th>Subject</th><th>Instructor</th><th>Date/Time</th><th>Enrolled</th><th>Status</th><th></th></tr></thead>
+              <tbody id="classesBody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--slate)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- STUDENTS -->
+        <div class="admin-section" id="sec-students">
+          <div class="admin-section-title">Students</div>
+          <div class="admin-section-sub">All registered students.</div>
+          <div style="margin-bottom:1rem;">
+            <input type="text" id="studentSearch" placeholder="Search by name or email…"
+              style="padding:0.6rem 0.9rem;border:1.5px solid rgba(15,15,15,0.12);border-radius:8px;font-family:Inter,sans-serif;font-size:0.9rem;outline:none;width:100%;max-width:360px;"
+              oninput="filterStudents(this.value)">
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Enrolled In</th><th>Joined</th><th>Status</th></tr></thead>
+              <tbody id="studentsBody"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--slate)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ATTENDANCE -->
+        <div class="admin-section" id="sec-attendance">
+          <div class="admin-section-title">Attendance</div>
+          <div class="admin-section-sub">Mark and review session attendance.</div>
+          <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:flex-end;">
+            <div>
+              <label style="font-size:0.85rem;font-weight:600;color:var(--slate);display:block;margin-bottom:0.3rem;">Select Class</label>
+              <select id="attendanceClassSel" onchange="loadAttendance(this.value)"
+                style="padding:0.6rem 0.9rem;border:1.5px solid rgba(15,15,15,0.12);border-radius:8px;font-family:Inter,sans-serif;font-size:0.9rem;outline:none;">
+                <option value="">— Select a class —</option>
+              </select>
+            </div>
+          </div>
+          <div id="attendanceTableWrap" class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Notes</th><th>Action</th></tr></thead>
+              <tbody id="attendanceBody"><tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--slate)">Select a class above.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="mt-2 text-right">
+            <button class="btn btn-primary btn-sm" onclick="saveAttendance()">Save Attendance</button>
+          </div>
+        </div>
+
+        <!-- ANNOUNCEMENTS -->
+        <div class="admin-section" id="sec-announce">
+          <div class="admin-section-title">Send Announcement</div>
+          <div class="admin-section-sub">Email students about updates, schedule changes, or reminders.</div>
+          <div id="announceAlert" class="alert mb-2"></div>
+          <div class="form-card" style="max-width:600px;">
+            <div class="form-group">
+              <label>Target Audience</label>
+              <select id="announceTarget">
+                <option value="all">All Students</option>
+                <option value="class">Students in a Specific Class</option>
+              </select>
+            </div>
+            <div class="form-group hidden" id="announceClassGroup">
+              <label>Select Class</label>
+              <select id="announceClassSel"></select>
+            </div>
+            <div class="form-group">
+              <label>Subject / Title</label>
+              <input type="text" id="announceTitle" placeholder="Class update: Tuesday session rescheduled">
+            </div>
+            <div class="form-group">
+              <label>Message</label>
+              <textarea id="announceMsg" class="announce-textarea" placeholder="Write your message here…"></textarea>
+            </div>
+            <button class="btn btn-primary" id="sendAnnounceBtn" onclick="sendAnnouncement()">
+              📢 Send to Students
+            </button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Add/Edit Class Modal -->
+  <div class="modal-overlay" id="classModal">
+    <div class="modal" style="max-width:560px;">
+      <button class="modal-close" onclick="closeClassModal()">✕</button>
+      <h3 id="classModalTitle">Add New Class</h3>
+      <p class="sub" style="margin-bottom:1.5rem;">Fill in the class details. Students will see this on the schedule.</p>
+      <div id="classModalAlert" class="alert mb-2"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Class Title</label>
+          <input type="text" id="cm-title" placeholder="e.g. Advanced Mathematics">
+        </div>
+        <div class="form-group">
+          <label>Subject</label>
+          <input type="text" id="cm-subject" placeholder="e.g. Mathematics">
+        </div>
+        <div class="form-group">
+          <label>Instructor</label>
+          <input type="text" id="cm-instructor" placeholder="Mr. / Ms. …">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="cm-date">
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="cm-time">
+        </div>
+        <div class="form-group">
+          <label>Duration (minutes)</label>
+          <input type="number" id="cm-duration" value="60" min="15" max="480">
+        </div>
+        <div class="form-group">
+          <label>Capacity</label>
+          <input type="number" id="cm-capacity" value="20" min="1" max="500">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Location / Meeting Link</label>
+          <input type="text" id="cm-location" placeholder="Room 101 or https://meet.google.com/…">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Description (optional)</label>
+          <textarea id="cm-description" style="resize:vertical;min-height:70px;" placeholder="What will this class cover?"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:1rem;margin-top:0.5rem;">
+        <button class="btn btn-ghost" onclick="closeClassModal()">Cancel</button>
+        <button class="btn btn-primary" id="saveClassBtn" onclick="saveClass()">Save Class</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+    let allStudents = [];
+    let allAdminClasses = [];
+    let editingClassId = null;
+
+    // ── AUTH ────────────────────────────────────────────────
+    function checkAdminSession() {
+      const s = Session.get();
+      if (s?.role === "admin") showAdminPanel();
+    }
+
+    async function adminLogin() {
+      const pw = document.getElementById("adminPw").value;
+      if (!pw) return;
+      const btn = document.getElementById("adminLoginBtn");
+      setLoading(btn, true);
+      const result = await API.adminLogin(pw);
+      setLoading(btn, false);
+      if (result.success) {
+        Session.set({ role: "admin" });
+        showAdminPanel();
+      } else {
+        showAlert("loginAlert", "Incorrect password.", "error");
+        document.getElementById("fg-pw").classList.add("error");
+      }
+    }
+
+    function showAdminPanel() {
+      document.getElementById("adminLoginPage").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+      document.getElementById("logoutLink").classList.remove("hidden");
+      loadOverview();
+    }
+
+    function adminLogout() {
+      Session.clear();
+      window.location.reload();
+    }
+
+    // ── NAVIGATION ──────────────────────────────────────────
+    function showSection(name, btn) {
+      document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".sidebar-link").forEach(b => b.classList.remove("active"));
+      document.getElementById("sec-" + name).classList.add("active");
+      btn.classList.add("active");
+      if (name === "students" && !allStudents.length) loadStudents();
+      if (name === "classes" && !allAdminClasses.length) loadAdminClasses();
+      if (name === "attendance") loadAttendanceClassList();
+      if (name === "announce") loadAnnounceClassList();
+    }
+
+    // ── OVERVIEW ────────────────────────────────────────────
+    async function loadOverview() {
+      const [dash, students] = await Promise.all([API.adminGetDashboard(), API.adminGetStudents()]);
+      if (dash.success) {
+        document.getElementById("ov-students").textContent = dash.students ?? "—";
+        document.getElementById("ov-classes").textContent = dash.activeClasses ?? "—";
+        document.getElementById("ov-enrollments").textContent = dash.enrollments ?? "—";
+        document.getElementById("ov-waitlist").textContent = dash.waitlisted ?? "—";
+        document.getElementById("ov-sessions").textContent = dash.sessionsThisMonth ?? "—";
+        document.getElementById("ov-attendance").textContent = dash.avgAttendance ? dash.avgAttendance + "%" : "—";
+      }
+      if (students.success && students.students) {
+        allStudents = students.students;
+        const recent = [...students.students].sort((a,b) => new Date(b.registeredAt) - new Date(a.registeredAt)).slice(0,8);
+        document.getElementById("recentRegistrations").innerHTML = recent.map(s => `
+          <tr>
+            <td>${s.firstName} ${s.lastName}</td>
+            <td class="mono">${s.email}</td>
+            <td>${s.enrolledClass || "—"}</td>
+            <td>${formatDate(s.registeredAt)}</td>
+            <td><span class="badge ${s.status === 'Active' ? 'badge-green' : 'badge-grey'}">${s.status || "Active"}</span></td>
+          </tr>`).join("") || `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--slate)">No registrations yet.</td></tr>`;
+      }
+    }
+
+    // ── CLASSES ─────────────────────────────────────────────
+    async function loadAdminClasses() {
+      const result = await API.adminGetClasses();
+      if (!result.success) return;
+      allAdminClasses = result.classes || [];
+      renderAdminClasses(allAdminClasses);
+    }
+
+    function renderAdminClasses(classes) {
+      const body = document.getElementById("classesBody");
+      if (!classes.length) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--slate)">No classes yet. Add one above.</td></tr>`;
+        return;
+      }
+      body.innerHTML = classes.map(c => `
+        <tr>
+          <td><strong>${c.title}</strong></td>
+          <td>${c.subject || "—"}</td>
+          <td>${c.instructor}</td>
+          <td>${formatDate(c.date)}<br><small>${formatTime(c.time)}</small></td>
+          <td>${c.enrolled}/${c.capacity}</td>
+          <td><span class="badge ${new Date(c.date) >= new Date() ? 'badge-green' : 'badge-grey'}">${new Date(c.date) >= new Date() ? 'Upcoming' : 'Past'}</span></td>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-sm btn-ghost" onclick="editClass('${c.id}')">Edit</button>
+            <button class="btn btn-sm btn-danger" style="margin-left:0.25rem;" onclick="deleteClass('${c.id}','${c.title.replace(/'/g,"\\'")}')">Delete</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    function openClassModal(classId) {
+      editingClassId = classId || null;
+      document.getElementById("classModalTitle").textContent = classId ? "Edit Class" : "Add New Class";
+      document.getElementById("saveClassBtn").textContent = classId ? "Save Changes" : "Save Class";
+      if (classId) {
+        const cls = allAdminClasses.find(c => c.id === classId);
+        if (cls) {
+          document.getElementById("cm-title").value = cls.title;
+          document.getElementById("cm-subject").value = cls.subject || "";
+          document.getElementById("cm-instructor").value = cls.instructor;
+          document.getElementById("cm-date").value = cls.date;
+          document.getElementById("cm-time").value = cls.time;
+          document.getElementById("cm-duration").value = cls.duration || 60;
+          document.getElementById("cm-capacity").value = cls.capacity;
+          document.getElementById("cm-location").value = cls.location || "";
+          document.getElementById("cm-description").value = cls.description || "";
+        }
+      } else {
+        ["cm-title","cm-subject","cm-instructor","cm-date","cm-time","cm-location","cm-description"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("cm-duration").value = 60;
+        document.getElementById("cm-capacity").value = 20;
+      }
+      document.getElementById("classModal").classList.add("open");
+    }
+
+    function editClass(id) { openClassModal(id); }
+    function closeClassModal() { document.getElementById("classModal").classList.remove("open"); editingClassId = null; }
+
+    async function saveClass() {
+      const payload = {
+        id:          editingClassId,
+        title:       document.getElementById("cm-title").value.trim(),
+        subject:     document.getElementById("cm-subject").value.trim(),
+        instructor:  document.getElementById("cm-instructor").value.trim(),
+        date:        document.getElementById("cm-date").value,
+        time:        document.getElementById("cm-time").value,
+        duration:    document.getElementById("cm-duration").value,
+        capacity:    document.getElementById("cm-capacity").value,
+        location:    document.getElementById("cm-location").value.trim(),
+        description: document.getElementById("cm-description").value.trim(),
+      };
+      if (!payload.title || !payload.instructor || !payload.date) {
+        showAlert("classModalAlert", "Title, instructor, and date are required.", "error");
+        return;
+      }
+      const btn = document.getElementById("saveClassBtn");
+      setLoading(btn, true);
+      const result = editingClassId ? await API.adminUpdateClass(payload) : await API.adminAddClass(payload);
+      setLoading(btn, false);
+      if (result.success) {
+        closeClassModal();
+        showAlert("classesAlert", `Class ${editingClassId ? "updated" : "added"} successfully.`, "success");
+        allAdminClasses = [];
+        loadAdminClasses();
+      } else {
+        showAlert("classModalAlert", result.error || "Save failed.", "error");
+      }
+    }
+
+    async function deleteClass(id, title) {
+      if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+      const result = await API.adminDeleteClass(id);
+      if (result.success) {
+        showAlert("classesAlert", `"${title}" deleted.`, "success");
+        allAdminClasses = [];
+        loadAdminClasses();
+      } else {
+        showAlert("classesAlert", result.error || "Delete failed.", "error");
+      }
+    }
+
+    // ── STUDENTS ────────────────────────────────────────────
+    async function loadStudents() {
+      const result = await API.adminGetStudents();
+      if (!result.success) return;
+      allStudents = result.students || [];
+      renderStudents(allStudents);
+    }
+
+    function renderStudents(students) {
+      document.getElementById("studentsBody").innerHTML = students.length
+        ? students.map(s => `
+            <tr>
+              <td><strong>${s.firstName} ${s.lastName}</strong></td>
+              <td class="mono text-sm">${s.email}</td>
+              <td>${s.phone || "—"}</td>
+              <td>${s.enrolledClasses || 0} class${s.enrolledClasses !== 1 ? "es" : ""}</td>
+              <td>${formatDate(s.registeredAt)}</td>
+              <td><span class="badge ${s.status === 'Active' ? 'badge-green' : 'badge-grey'}">${s.status || "Active"}</span></td>
+            </tr>`).join("")
+        : `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--slate)">No students yet.</td></tr>`;
+    }
+
+    function filterStudents(q) {
+      q = q.toLowerCase();
+      renderStudents(allStudents.filter(s =>
+        `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q)
+      ));
+    }
+
+    // ── ATTENDANCE ──────────────────────────────────────────
+    async function loadAttendanceClassList() {
+      if (!allAdminClasses.length) {
+        const r = await API.adminGetClasses();
+        if (r.success) allAdminClasses = r.classes || [];
+      }
+      const sel = document.getElementById("attendanceClassSel");
+      sel.innerHTML = '<option value="">— Select a class —</option>' +
+        allAdminClasses.map(c => `<option value="${c.id}">${c.title} — ${formatDate(c.date)}</option>`).join("");
+    }
+
+    async function loadAttendance(classId) {
+      if (!classId) return;
+      const result = await API.adminGetAttendance(classId);
+      const body = document.getElementById("attendanceBody");
+      if (!result.success || !result.students?.length) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--slate)">No students enrolled in this class.</td></tr>`;
+        return;
+      }
+      body.innerHTML = result.students.map(s => `
+        <tr>
+          <td><strong>${s.firstName} ${s.lastName}</strong></td>
+          <td class="mono text-sm">${s.email}</td>
+          <td>
+            <select data-sid="${s.studentId}" style="padding:0.35rem 0.6rem;border-radius:6px;border:1.5px solid rgba(15,15,15,0.12);font-family:Inter,sans-serif;font-size:0.85rem;outline:none;">
+              <option value="Present" ${s.status==='Present'?'selected':''}>✅ Present</option>
+              <option value="Absent" ${s.status==='Absent'?'selected':''}>❌ Absent</option>
+              <option value="Late" ${s.status==='Late'?'selected':''}>⏰ Late</option>
+              <option value="Excused" ${s.status==='Excused'?'selected':''}>📋 Excused</option>
+            </select>
+          </td>
+          <td><input type="text" data-notes="${s.studentId}" value="${s.notes || ''}" placeholder="Optional note…"
+            style="width:100%;padding:0.35rem 0.6rem;border:1.5px solid rgba(15,15,15,0.12);border-radius:6px;font-family:Inter,sans-serif;font-size:0.85rem;outline:none;"></td>
+          <td class="text-sm text-slate">${s.lastUpdated ? formatDate(s.lastUpdated) : "—"}</td>
+        </tr>`).join("");
+    }
+
+    async function saveAttendance() {
+      const classId = document.getElementById("attendanceClassSel").value;
+      if (!classId) { alert("Select a class first."); return; }
+      const rows = [];
+      document.querySelectorAll("[data-sid]").forEach(sel => {
+        const sid = sel.dataset.sid;
+        const notes = document.querySelector(`[data-notes="${sid}"]`)?.value || "";
+        rows.push({ studentId: sid, status: sel.value, notes });
+      });
+      const result = await API.adminMarkAttendance({ classId, records: rows });
+      if (result.success) showAlert("overviewAlert", "Attendance saved!", "success");
+      else alert(result.error || "Save failed.");
+    }
+
+    // ── ANNOUNCEMENTS ───────────────────────────────────────
+    async function loadAnnounceClassList() {
+      if (!allAdminClasses.length) {
+        const r = await API.adminGetClasses();
+        if (r.success) allAdminClasses = r.classes || [];
+      }
+      const sel = document.getElementById("announceClassSel");
+      sel.innerHTML = allAdminClasses.map(c => `<option value="${c.id}">${c.title}</option>`).join("");
+
+      document.getElementById("announceTarget").onchange = function() {
+        document.getElementById("announceClassGroup").classList.toggle("hidden", this.value !== "class");
+      };
+    }
+
+    async function sendAnnouncement() {
+      const title = document.getElementById("announceTitle").value.trim();
+      const msg   = document.getElementById("announceMsg").value.trim();
+      const target = document.getElementById("announceTarget").value;
+      const classId = target === "class" ? document.getElementById("announceClassSel").value : "all";
+      if (!title || !msg) { showAlert("announceAlert", "Please fill in the title and message.", "error"); return; }
+      const btn = document.getElementById("sendAnnounceBtn");
+      setLoading(btn, true);
+      const result = await API.adminSendAnnouncement({ title, message: msg, target, classId });
+      setLoading(btn, false);
+      if (result.success) {
+        showAlert("announceAlert", `✅ Announcement sent to ${result.count || "all"} students.`, "success");
+        document.getElementById("announceTitle").value = "";
+        document.getElementById("announceMsg").value = "";
+      } else {
+        showAlert("announceAlert", result.error || "Send failed.", "error");
+      }
+    }
+
+    // ── INIT ────────────────────────────────────────────────
+    document.getElementById("classModal").addEventListener("click", function(e) {
+      if (e.target === this) closeClassModal();
+    });
+
+    checkAdminSession();
+  </script>
+</body>
+</html>
