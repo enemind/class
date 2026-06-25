@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — EduTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../index.html" class="nav-logo">Edu<span>Track</span></a>
+    <div class="nav-links">
+      <a href="schedule.html">Schedule</a>
+      <a href="register.html">Register</a>
+      <a href="login.html">Student Login</a>
+      <a href="admin.html" class="nav-admin">Admin ↗</a>
+    </div>
+    <button class="nav-burger" onclick="document.getElementById('navMobile').classList.toggle('open')">☰</button>
+  </nav>
+  <div class="nav-mobile" id="navMobile">
+    <a href="schedule.html">Schedule</a>
+    <a href="register.html">Register</a>
+    <a href="login.html">Login</a>
+  </div>
+
+  <div class="form-page">
+    <div style="margin-bottom:0.25rem; font-family:'JetBrains Mono',monospace; font-size:0.75rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--sage);">New Student</div>
+    <h1>Create your account</h1>
+    <p class="sub">Register to enroll in classes and receive email updates.</p>
+
+    <div class="form-card">
+      <div id="alert" class="alert"></div>
+
+      <!-- Step 1: Personal Info -->
+      <div id="step1">
+        <div class="form-group" id="fg-firstName">
+          <label for="firstName">First Name</label>
+          <input type="text" id="firstName" placeholder="Jane" autocomplete="given-name">
+          <div class="form-error" id="err-firstName"></div>
+        </div>
+        <div class="form-group" id="fg-lastName">
+          <label for="lastName">Last Name</label>
+          <input type="text" id="lastName" placeholder="Doe" autocomplete="family-name">
+          <div class="form-error" id="err-lastName"></div>
+        </div>
+        <div class="form-group" id="fg-email">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="jane@example.com" autocomplete="email">
+          <div class="form-error" id="err-email"></div>
+        </div>
+        <div class="form-group" id="fg-phone">
+          <label for="phone">Phone (optional)</label>
+          <input type="tel" id="phone" placeholder="+254 7XX XXX XXX">
+        </div>
+
+        <div class="form-group" id="fg-class">
+          <label for="classSelect">Choose a Class to Enroll In</label>
+          <select id="classSelect">
+            <option value="">— Loading classes… —</option>
+          </select>
+          <div class="form-hint">You can enroll in more classes from your dashboard later.</div>
+          <div class="form-error" id="err-class"></div>
+        </div>
+
+        <div class="form-group" id="fg-how">
+          <label for="howHeard">How did you hear about us?</label>
+          <select id="howHeard">
+            <option value="">— Select —</option>
+            <option value="Social Media">Social Media</option>
+            <option value="Friend / Family">Friend / Family</option>
+            <option value="Flyer / Poster">Flyer / Poster</option>
+            <option value="Online Search">Online Search</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="registerBtn" onclick="submitRegistration()">
+            Create Account & Enroll
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Success -->
+      <div id="step2" class="hidden" style="text-align:center; padding: 1rem 0;">
+        <div style="font-size:3rem; margin-bottom:1rem;">🎉</div>
+        <h3>You're registered!</h3>
+        <p class="text-slate mt-1" style="font-size:0.9rem;">We've sent a confirmation email to <strong id="confirmedEmail"></strong>. Check your inbox to verify your account.</p>
+        <div class="mt-3">
+          <a href="login.html" class="btn btn-primary">Go to Student Login →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-switch">Already have an account? <a href="login.html">Sign in →</a></div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+    // Load classes into select
+    async function loadClasses() {
+      const result = await API.getClasses();
+      const sel = document.getElementById("classSelect");
+      if (!result.success || !result.classes?.length) {
+        sel.innerHTML = '<option value="">— No classes available —</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">— Select a class —</option>' +
+        result.classes.map(c =>
+          `<option value="${c.id}" ${c.enrolled >= c.capacity ? 'disabled' : ''}>
+            ${c.title} — ${formatDate(c.date)} ${formatTime(c.time)}
+            ${c.enrolled >= c.capacity ? ' (FULL)' : ` (${c.capacity - c.enrolled} spots left)`}
+          </option>`
+        ).join("");
+    }
+
+    function validate() {
+      let ok = true;
+      const fields = [
+        { id: "firstName", err: "err-firstName", fg: "fg-firstName", msg: "First name is required." },
+        { id: "lastName",  err: "err-lastName",  fg: "fg-lastName",  msg: "Last name is required." },
+        { id: "email",     err: "err-email",     fg: "fg-email",     msg: "A valid email is required." },
+        { id: "classSelect", err: "err-class",   fg: "fg-class",     msg: "Please select a class." },
+      ];
+      fields.forEach(f => {
+        const val = document.getElementById(f.id).value.trim();
+        const valid = f.id === "email" ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) : val.length > 0;
+        document.getElementById(f.fg).classList.toggle("error", !valid);
+        document.getElementById(f.err).textContent = valid ? "" : f.msg;
+        if (!valid) ok = false;
+      });
+      return ok;
+    }
+
+    async function submitRegistration() {
+      if (!validate()) return;
+      const btn = document.getElementById("registerBtn");
+      setLoading(btn, true);
+
+      const payload = {
+        firstName:   document.getElementById("firstName").value.trim(),
+        lastName:    document.getElementById("lastName").value.trim(),
+        email:       document.getElementById("email").value.trim().toLowerCase(),
+        phone:       document.getElementById("phone").value.trim(),
+        classId:     document.getElementById("classSelect").value,
+        howHeard:    document.getElementById("howHeard").value,
+        registeredAt: new Date().toISOString(),
+      };
+
+      const result = await API.registerStudent(payload);
+      setLoading(btn, false);
+
+      if (result.success) {
+        document.getElementById("confirmedEmail").textContent = payload.email;
+        document.getElementById("step1").classList.add("hidden");
+        document.getElementById("step2").classList.remove("hidden");
+      } else {
+        showAlert("alert", result.error || "Registration failed. Please try again.", "error");
+      }
+    }
+
+    loadClasses();
+  </script>
+</body>
+</html>
