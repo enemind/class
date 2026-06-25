@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Class Schedule — EduTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../index.html" class="nav-logo">Edu<span>Track</span></a>
+    <div class="nav-links">
+      <a href="schedule.html" style="color:var(--sage)">Schedule</a>
+      <a href="register.html">Register</a>
+      <a id="navAuth" href="login.html">Student Login</a>
+      <a href="admin.html" class="nav-admin">Admin ↗</a>
+    </div>
+    <button class="nav-burger" onclick="document.getElementById('navMobile').classList.toggle('open')">☰</button>
+  </nav>
+  <div class="nav-mobile" id="navMobile">
+    <a href="schedule.html">Schedule</a>
+    <a href="register.html">Register</a>
+    <a id="navAuthMobile" href="login.html">Login</a>
+  </div>
+
+  <div class="schedule-page">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.25rem;">Browse & Enroll</div>
+    <h1 style="margin-bottom:0.5rem;">Class Schedule</h1>
+    <p class="text-slate" style="margin-bottom:2rem;font-size:0.95rem;">All upcoming tutoring sessions. Click a class to enroll.</p>
+
+    <div id="mainAlert" class="alert mb-2"></div>
+
+    <!-- Filters -->
+    <div class="schedule-filters" id="filterBar">
+      <button class="filter-btn active" onclick="filterClasses('all', this)">All Classes</button>
+      <!-- Subject filters added dynamically -->
+    </div>
+
+    <!-- Search -->
+    <div style="margin-bottom:1.5rem;">
+      <input type="text" id="searchInput" placeholder="Search by class name or instructor…"
+        style="width:100%;max-width:400px;padding:0.65rem 0.9rem;border:1.5px solid rgba(15,15,15,0.12);border-radius:8px;font-family:Inter,sans-serif;font-size:0.95rem;background:white;outline:none;"
+        oninput="searchClasses(this.value)">
+    </div>
+
+    <div id="scheduleGrid" class="schedule-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </div>
+
+  <!-- Enroll Modal -->
+  <div class="modal-overlay" id="enrollModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+    let allClasses = [];
+    let activeFilter = "all";
+    const session = Session.get();
+
+    // Update nav for logged-in users
+    if (session?.role === "student") {
+      document.getElementById("navAuth").textContent = "My Dashboard";
+      document.getElementById("navAuth").href = "dashboard.html";
+      if (document.getElementById("navAuthMobile")) {
+        document.getElementById("navAuthMobile").textContent = "My Dashboard";
+        document.getElementById("navAuthMobile").href = "dashboard.html";
+      }
+    }
+
+    async function loadSchedule() {
+      const result = await API.getClasses();
+      if (!result.success) {
+        document.getElementById("scheduleGrid").innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Couldn't load classes</h3>
+            <p>Check your connection or try again later.</p>
+          </div>`;
+        return;
+      }
+      allClasses = result.classes || [];
+      buildFilters();
+      renderClasses(allClasses);
+
+      // Auto-open enroll/waitlist if URL has params
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("enroll")) openEnrollModal(params.get("enroll"));
+      if (params.get("waitlist")) openWaitlistModal(params.get("waitlist"));
+    }
+
+    function buildFilters() {
+      const subjects = [...new Set(allClasses.map(c => c.subject).filter(Boolean))];
+      const bar = document.getElementById("filterBar");
+      subjects.forEach(subj => {
+        const btn = document.createElement("button");
+        btn.className = "filter-btn";
+        btn.textContent = subj;
+        btn.onclick = () => filterClasses(subj, btn);
+        bar.appendChild(btn);
+      });
+    }
+
+    function filterClasses(filter, btn) {
+      activeFilter = filter;
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const filtered = filter === "all" ? allClasses : allClasses.filter(c => c.subject === filter);
+      renderClasses(filtered);
+    }
+
+    function searchClasses(query) {
+      const q = query.toLowerCase();
+      const filtered = allClasses.filter(c =>
+        (activeFilter === "all" || c.subject === activeFilter) &&
+        (c.title.toLowerCase().includes(q) || (c.instructor || "").toLowerCase().includes(q))
+      );
+      renderClasses(filtered);
+    }
+
+    function renderClasses(classes) {
+      const grid = document.getElementById("scheduleGrid");
+      if (!classes.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-state-icon">🔍</div>
+          <h3>No classes found</h3>
+          <p>Try a different filter or search term.</p>
+        </div>`;
+        return;
+      }
+      grid.innerHTML = classes.map(cls => {
+        const pct = Math.min(100, Math.round((cls.enrolled / cls.capacity) * 100));
+        const capCls = capacityClass(cls.enrolled, cls.capacity);
+        const full = cls.enrolled >= cls.capacity;
+        return `<div class="class-card" style="cursor:pointer;" onclick="openEnrollModal('${cls.id}')">
+          <div class="class-card-subject">${cls.subject || "General"}</div>
+          <div class="class-card-title">${cls.title}</div>
+          <div class="class-card-meta">
+            <span>👤 ${cls.instructor}</span>
+            <span>📅 ${formatDate(cls.date)} · ${formatTime(cls.time)}</span>
+            <span>📍 ${cls.location || "Online"}</span>
+            ${cls.duration ? `<span>⏱ ${cls.duration} min</span>` : ""}
+          </div>
+          <div class="class-card-footer">
+            <div class="capacity-bar"><div class="capacity-fill ${capCls}" style="width:${pct}%"></div></div>
+            <span class="capacity-label">${cls.enrolled}/${cls.capacity} ${full ? "· FULL" : ""}</span>
+          </div>
+          <div class="mt-2">
+            ${full
+              ? `<div class="btn btn-sm btn-gold w-full" style="text-align:center;">Join Waitlist</div>`
+              : `<div class="btn btn-sm btn-primary w-full" style="text-align:center;">Enroll →</div>`
+            }
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    function openEnrollModal(classId) {
+      const cls = allClasses.find(c => c.id === classId);
+      if (!cls) return;
+      const full = cls.enrolled >= cls.capacity;
+      const content = document.getElementById("modalContent");
+      content.innerHTML = `
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.5rem;">${cls.subject || "Class"}</div>
+        <h3 style="margin-bottom:0.5rem;">${cls.title}</h3>
+        <p class="sub">${cls.description || "Join this tutoring session to learn and grow."}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;font-size:0.88rem;color:var(--slate);">
+          <div>📅 ${formatDate(cls.date)}</div>
+          <div>🕐 ${formatTime(cls.time)}</div>
+          <div>👤 ${cls.instructor}</div>
+          <div>📍 ${cls.location || "Online"}</div>
+          ${cls.duration ? `<div>⏱ ${cls.duration} min</div>` : ""}
+          <div>👥 ${cls.enrolled}/${cls.capacity} enrolled</div>
+        </div>
+        <div id="enrollAlert" class="alert mb-2"></div>
+        ${session?.role === "student"
+          ? full
+            ? `<button class="btn btn-gold w-full" onclick="doWaitlist('${cls.id}')">Join Waitlist</button>`
+            : `<button class="btn btn-primary w-full" id="enrollBtn" onclick="doEnroll('${cls.id}')">Enroll in this Class</button>`
+          : `<p style="font-size:0.88rem;color:var(--slate);margin-bottom:1rem;">You need to be logged in to enroll.</p>
+             <a href="login.html" class="btn btn-primary w-full" style="text-align:center;">Sign In to Enroll</a>
+             <a href="register.html" class="btn btn-ghost w-full mt-1" style="text-align:center;margin-top:0.5rem;">Create an Account</a>`
+        }`;
+      document.getElementById("enrollModal").classList.add("open");
+    }
+
+    function openWaitlistModal(classId) { openEnrollModal(classId); }
+
+    function closeModal() {
+      document.getElementById("enrollModal").classList.remove("open");
+    }
+
+    async function doEnroll(classId) {
+      const btn = document.getElementById("enrollBtn");
+      setLoading(btn, true);
+      const result = await API.enroll(session.studentId, classId);
+      setLoading(btn, false);
+      if (result.success) {
+        showAlert("enrollAlert", "✅ You're enrolled! Check your email for confirmation.", "success");
+        btn.disabled = true;
+        btn.textContent = "Enrolled ✓";
+        loadSchedule();
+      } else {
+        showAlert("enrollAlert", result.error || "Enrollment failed. Try again.", "error");
+      }
+    }
+
+    async function doWaitlist(classId) {
+      const result = await API.joinWaitlist(session.studentId, classId);
+      if (result.success) {
+        showAlert("enrollAlert", "⏳ You're on the waitlist! We'll email you if a spot opens.", "info");
+      } else {
+        showAlert("enrollAlert", result.error || "Could not join waitlist.", "error");
+      }
+    }
+
+    // Close modal on outside click
+    document.getElementById("enrollModal").addEventListener("click", function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    loadSchedule();
+  </script>
+</body>
+</html>
