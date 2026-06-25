@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Login — EduTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../index.html" class="nav-logo">Edu<span>Track</span></a>
+    <div class="nav-links">
+      <a href="schedule.html">Schedule</a>
+      <a href="register.html">Register</a>
+      <a href="login.html">Student Login</a>
+      <a href="admin.html" class="nav-admin">Admin ↗</a>
+    </div>
+    <button class="nav-burger" onclick="document.getElementById('navMobile').classList.toggle('open')">☰</button>
+  </nav>
+  <div class="nav-mobile" id="navMobile">
+    <a href="schedule.html">Schedule</a>
+    <a href="register.html">Register</a>
+    <a href="login.html">Login</a>
+  </div>
+
+  <div class="form-page">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:0.25rem;">Student Portal</div>
+    <h1>Sign in</h1>
+    <p class="sub">Enter your email and we'll send you a magic link — no password needed.</p>
+
+    <div class="form-card">
+      <div id="alert" class="alert"></div>
+
+      <!-- Step 1: Enter email -->
+      <div id="stepEmail">
+        <div class="form-group" id="fg-email">
+          <label for="email">Your Email Address</label>
+          <input type="email" id="email" placeholder="jane@example.com" autocomplete="email"
+            onkeydown="if(event.key==='Enter') sendLink()">
+          <div class="form-error" id="err-email"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="sendBtn" onclick="sendLink()">Send Magic Link</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Check email -->
+      <div id="stepCheck" class="hidden" style="text-align:center;padding:1rem 0;">
+        <div style="font-size:3rem;margin-bottom:1rem;">📬</div>
+        <h3>Check your inbox</h3>
+        <p class="text-slate mt-1" style="font-size:0.9rem;">
+          We sent a sign-in link to <strong id="sentEmail"></strong>.<br>
+          Click the link in the email to access your dashboard.
+        </p>
+        <p class="mt-2 text-sm text-slate">Didn't get it? <a href="#" onclick="resetLogin()" style="color:var(--sage)">Try again</a></p>
+      </div>
+    </div>
+
+    <div class="form-switch">New here? <a href="register.html">Create an account →</a></div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+    // Check for magic link token in URL (user clicked from email)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+
+    if (token) {
+      (async () => {
+        const result = await API.verifyToken(token);
+        if (result.success && result.student) {
+          Session.set({ role: "student", ...result.student });
+          window.location.href = "dashboard.html";
+        } else {
+          showAlert("alert", "This link has expired or is invalid. Please request a new one.", "error");
+        }
+      })();
+    }
+
+    async function sendLink() {
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      document.getElementById("fg-email").classList.toggle("error", !valid);
+      document.getElementById("err-email").textContent = valid ? "" : "Enter a valid email address.";
+      if (!valid) return;
+
+      const btn = document.getElementById("sendBtn");
+      setLoading(btn, true);
+      const result = await API.loginStudent(email);
+      setLoading(btn, false);
+
+      if (result.success) {
+        document.getElementById("sentEmail").textContent = email;
+        document.getElementById("stepEmail").classList.add("hidden");
+        document.getElementById("stepCheck").classList.remove("hidden");
+      } else {
+        showAlert("alert", result.error || "Email not found. Have you registered?", "error");
+      }
+    }
+
+    function resetLogin() {
+      document.getElementById("stepEmail").classList.remove("hidden");
+      document.getElementById("stepCheck").classList.add("hidden");
+      document.getElementById("email").value = "";
+    }
+  </script>
+</body>
+</html>
