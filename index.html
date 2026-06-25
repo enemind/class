@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduTrack — Academic Class Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">Edu<span>Track</span></a>
+    <div class="nav-links">
+      <a href="pages/schedule.html">Schedule</a>
+      <a href="pages/register.html">Register</a>
+      <a href="pages/login.html">Student Login</a>
+      <a href="pages/admin.html" class="nav-admin">Admin ↗</a>
+    </div>
+    <button class="nav-burger" onclick="toggleNav()">☰</button>
+  </nav>
+  <div class="nav-mobile" id="navMobile">
+    <a href="pages/schedule.html">Schedule</a>
+    <a href="pages/register.html">Register</a>
+    <a href="pages/login.html">Student Login</a>
+    <a href="pages/admin.html">Admin Panel</a>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">Academic Tutoring Platform</div>
+    <h1 class="hero-headline">Learn without <em>the friction.</em></h1>
+    <p class="hero-sub">Register for classes, track your sessions, and stay updated — all in one place. Instructors manage everything from a simple dashboard connected to Google Sheets.</p>
+    <div class="hero-cta">
+      <a href="pages/register.html" class="btn btn-primary">Register for a Class</a>
+      <a href="pages/schedule.html" class="btn btn-ghost">View Schedule →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num" id="statStudents">—</span><span class="stat-label">Students Enrolled</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-num" id="statClasses">—</span><span class="stat-label">Active Classes</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-num" id="statSessions">—</span><span class="stat-label">Sessions This Month</span></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <div class="how-label">How it works</div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-icon">✍️</div>
+        <h3>Register</h3>
+        <p>Create your student account and pick the classes that fit your schedule. You'll get a confirmation email instantly.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-icon">📅</div>
+        <h3>Get Reminders</h3>
+        <p>Automatic email reminders 24 hours before every session. Never miss a class again.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-icon">📊</div>
+        <h3>Track Progress</h3>
+        <p>Log in to your student dashboard to see attendance history, upcoming sessions, and class announcements.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-icon">🔔</div>
+        <h3>Stay Updated</h3>
+        <p>Instant email alerts for class changes, cancellations, or new announcements from your instructor.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPCOMING CLASSES PREVIEW -->
+  <section class="preview">
+    <div class="preview-header">
+      <h2>Upcoming Classes</h2>
+      <a href="pages/schedule.html" class="preview-more">See full schedule →</a>
+    </div>
+    <div id="previewClasses" class="preview-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-brand">Edu<span>Track</span></div>
+    <div class="footer-links">
+      <a href="pages/schedule.html">Schedule</a>
+      <a href="pages/register.html">Register</a>
+      <a href="pages/login.html">Login</a>
+      <a href="pages/admin.html">Admin</a>
+    </div>
+    <div class="footer-note">Powered by Google Sheets + GitHub Pages</div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
